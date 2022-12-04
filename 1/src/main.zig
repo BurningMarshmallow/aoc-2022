@@ -14,13 +14,11 @@ pub fn main() !void {
     const gpa = general_purpose_allocator.allocator();
 
     var buf: [1024]u8 = undefined;
-    var max_calories: i32 = 0;
     var total_calory: i32 = 0;
 
     var total_calories = std.ArrayList(i32).init(gpa);
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
         if (line.len == 0) {
-            max_calories = std.math.max(max_calories, total_calory);
             try total_calories.append(total_calory);
             total_calory = 0;
         } else {
