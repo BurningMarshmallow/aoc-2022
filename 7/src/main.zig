@@ -4,19 +4,22 @@ const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 const eql = std.mem.eql;
 
-const Filesystem = std.StringHashMap(ArrayList([]const u8));
+const Byte = u8;
+const String = []const Byte;
+const Ulong = u64;
+const Filesystem = std.StringHashMap(ArrayList(String));
 
-fn parseNumber(string: []const u8) !u64 {
-    return std.fmt.parseInt(u64, string, 10);
+fn parseNumber(string: String) !Ulong {
+    return std.fmt.parseInt(Ulong, string, 10);
 }
 
-fn size(filesystem: std.StringHashMap(ArrayList([]const u8)), path: []const u8, value: []const u8, allocator: Allocator) !u64 {
+fn size(filesystem: std.StringHashMap(ArrayList(String)), path: String, value: String, allocator: Allocator) !Ulong {
     var parsedValue = parseNumber(value) catch 0;
     if (parsedValue != 0) {
         return parsedValue;
     }
 
-    var new_path = ArrayList(u8).init(allocator);
+    var new_path = ArrayList(Byte).init(allocator);
     try new_path.appendSlice(path);
     try new_path.appendSlice("/");
     try new_path.appendSlice(value);
@@ -24,8 +27,8 @@ fn size(filesystem: std.StringHashMap(ArrayList([]const u8)), path: []const u8, 
 }
 
 
-fn getSize(filesystem: std.StringHashMap(ArrayList([]const u8)), path: []const u8, allocator: Allocator) u64 {
-    var total: u64 = 0;
+fn getSize(filesystem: std.StringHashMap(ArrayList(String)), path: String, allocator: Allocator) Ulong {
+    var total: Ulong = 0;
     for (filesystem.get(path).?.items) |x| {
         total += size(filesystem, path, x, allocator) catch 0;
     }
@@ -47,17 +50,17 @@ pub fn main() !void {
     defer dir.deinit();
     defer file.deinit();
 
-    var path = ArrayList([]const u8).init(gpa);   
+    var path = ArrayList(String).init(gpa);   
     defer path.deinit();
     try path.append("");
 
-    var it = std.mem.tokenize(u8, input, "\n");
+    var it = std.mem.tokenize(Byte, input, "\n");
     while (it.next()) |cmd| {
-        if (eql(u8, cmd, "$ cd ..")) {
+        if (eql(Byte, cmd, "$ cd ..")) {
             _ = path.pop();
             continue;
         }
-        if (eql(u8, cmd, "$ cd /")) {
+        if (eql(Byte, cmd, "$ cd /")) {
             path.clearRetainingCapacity();
             try path.append("");
             continue;
@@ -68,7 +71,7 @@ pub fn main() !void {
             try path.append(dir_name);
             continue;
         }
-        if (eql(u8, cmd, "$ ls")) {
+        if (eql(Byte, cmd, "$ ls")) {
             continue;
         }
         if (try dir.match(cmd)) {
@@ -77,7 +80,7 @@ pub fn main() !void {
             var curr_path = try std.mem.join(gpa, "/", path.items);
             var files_in_dir = if (filesystem.contains(curr_path))
                 filesystem.get(curr_path).? else 
-                ArrayList([]const u8).init(gpa);
+                ArrayList(String).init(gpa);
             try files_in_dir.append(dir_name);
             try filesystem.put(curr_path, files_in_dir);
             continue;
@@ -88,16 +91,16 @@ pub fn main() !void {
             var curr_path = try std.mem.join(gpa, "/", path.items);
             var files_in_dir = if (filesystem.contains(curr_path))
                 filesystem.get(curr_path).? else 
-                ArrayList([]const u8).init(gpa);
+                ArrayList(String).init(gpa);
             try files_in_dir.append(file_size);
             try filesystem.put(curr_path, files_in_dir);
             continue;
         }
     }
 
-    var answer_for_part_one: u64 = 0;
-    var limit_for_part_two: u64 = 30000000 - (70000000 - getSize(filesystem, "", gpa));
-    var answer_for_part_two: u64 = std.math.maxInt(u64);
+    var answer_for_part_one: Ulong = 0;
+    var limit_for_part_two: Ulong = 30000000 - (70000000 - getSize(filesystem, "", gpa));
+    var answer_for_part_two: Ulong = std.math.maxInt(Ulong);
 
     var keyIt = filesystem.keyIterator();
     while (keyIt.next()) |key| {
