@@ -46,8 +46,8 @@ fn parseNumber(string: String) !Int {
 }
 
 fn parseV(string: String) !V {
-    var coordsIt = std.mem.tokenize(Byte, string, ",");
-    return V{ .x = try parseNumber(coordsIt.next().?), .y = try parseNumber(coordsIt.next().?) };
+    var coords_it = std.mem.tokenize(Byte, string, ",");
+    return V{ .x = try parseNumber(coords_it.next().?), .y = try parseNumber(coords_it.next().?) };
 }
 
 fn containsInCave(cave: ArrayList(Seg), value: V) bool {
@@ -73,31 +73,22 @@ fn numOfEntries(map: std.AutoHashMap(V, void)) Int {
     return num_of_entries;
 }
 
-const input = @embedFile("input.txt");
-
-pub fn main() !void {
-    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
-    const gpa = general_purpose_allocator.allocator();
-    var cave = ArrayList(Seg).init(gpa);
-    defer cave.deinit();
-
-    var lineIt = std.mem.tokenize(Byte, input, "\n");
-    while (lineIt.next()) |line| {
-        var pointsIt = std.mem.tokenize(Byte, line, " -> ");
-        var start = try parseV(pointsIt.next().?);
-        while (pointsIt.next()) |pointStr| {
-            var end = try parseV(pointStr);
-            var seg = Seg{ .start = start, .end = end };
-            try cave.append(seg);
-            start = end;
-        }
+fn maxOfY(list: ArrayList(Seg)) Int {
+    var maxY: Int = -1;
+    for (list.items) |seg| {
+        maxY = max(maxY, seg.start.y);
+        maxY = max(maxY, seg.end.y);
     }
 
-    var sand_source = V { .x = 500, .y = 0 };
-    var sand = std.AutoHashMap(V, void).init(gpa);
+    return maxY;
+}
+
+const input = @embedFile("input.txt");
+
+fn part1(alloc: Allocator, cave: ArrayList(Seg), sand_source: V, threshold: Int) !void {
+    var sand = std.AutoHashMap(V, void).init(alloc);
     defer sand.deinit();
 
-    var threshold: Int = 165; // by hand
     while (true) {
         var new_grain = sand_source;
         while (true) {
@@ -129,10 +120,13 @@ pub fn main() !void {
         try sand.put(new_grain, {});
     }
 
-    // Part 2
-    std.debug.print("Part 2 begins\n", .{});
-    var moresand = std.AutoHashMap(V, void).init(gpa);
-    defer moresand.deinit();
+    const stdout = std.io.getStdOut().writer();
+    try stdout.print("Part 1: {}\n", .{numOfEntries(sand)});
+}
+
+fn part2(alloc: Allocator, cave: ArrayList(Seg), sand_source: V, threshold: Int) !void {
+    var sand = std.AutoHashMap(V, void).init(alloc);
+    defer sand.deinit();
 
     var i: Int = 0;
     while (true) {
@@ -143,30 +137,54 @@ pub fn main() !void {
         var new_grain = sand_source;
         while (true) {
             var bottom = new_grain.plus(V { .x = 0, .y = 1} );
-            if (!containsInCave(cave, bottom) and !moresand.contains(bottom) and !hitTheBottom(threshold, bottom)) {
+            if (!containsInCave(cave, bottom) and !sand.contains(bottom) and !hitTheBottom(threshold, bottom)) {
                 new_grain = bottom;
                 continue;
             }
             var bottom_left = new_grain.plus(V { .x = -1, .y = 1} );
-            if (!containsInCave(cave, bottom_left) and !moresand.contains(bottom_left) and !hitTheBottom(threshold, bottom)) {
+            if (!containsInCave(cave, bottom_left) and !sand.contains(bottom_left) and !hitTheBottom(threshold, bottom)) {
                 new_grain = bottom_left;
                 continue;
             }
             var bottom_right = new_grain.plus(V { .x = 1, .y = 1} );
-            if (!containsInCave(cave, bottom_right) and !moresand.contains(bottom_right) and !hitTheBottom(threshold, bottom)) {
+            if (!containsInCave(cave, bottom_right) and !sand.contains(bottom_right) and !hitTheBottom(threshold, bottom)) {
                 new_grain = bottom_right;
                 continue;
             }
             break;
         }
 
-        try moresand.put(new_grain, {});
+        try sand.put(new_grain, {});
         if (new_grain.x == sand_source.x and new_grain.y == sand_source.y) {
             break;
         }
     }
 
     const stdout = std.io.getStdOut().writer();
-    try stdout.print("Part 1: {}\n", .{numOfEntries(sand)});
-    try stdout.print("Part 2: {}\n", .{numOfEntries(moresand)});
+    try stdout.print("Part 2: {}\n", .{numOfEntries(sand)});
+}
+
+pub fn main() !void {
+    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    const gpa = general_purpose_allocator.allocator();
+    var cave = ArrayList(Seg).init(gpa);
+    defer cave.deinit();
+
+    var line_it = std.mem.tokenize(Byte, input, "\n");
+    while (line_it.next()) |line| {
+        var pointsIt = std.mem.tokenize(Byte, line, " -> ");
+        var start = try parseV(pointsIt.next().?);
+        while (pointsIt.next()) |pointStr| {
+            var end = try parseV(pointStr);
+            var seg = Seg{ .start = start, .end = end };
+            try cave.append(seg);
+            start = end;
+        }
+    }
+
+    var sand_source = V { .x = 500, .y = 0 };
+    var threshold: Int = maxOfY(cave);
+
+    try part1(gpa, cave, sand_source, threshold);
+    try part2(gpa, cave, sand_source, threshold);
 }
