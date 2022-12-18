@@ -69,13 +69,13 @@ fn bfs(heightmap: [N][M]Byte, start_pos: V, end_pos: V) !Int {
         var offsets = [_]V { V.init(-1, 0), V.init(1, 0), V.init(0, -1), V.init(0, 1) };
         for (offsets) |offset| {
             var new_node = state.node.plus(offset);
-            var atNode: Byte = at(heightmap, state.node).?;
-            var atNewNode: ?Byte = at(heightmap, new_node);
-            if (atNewNode == null) {
+            var at_node: Byte = at(heightmap, state.node).?;
+            var at_new_node: ?Byte = at(heightmap, new_node);
+            if (at_new_node == null) {
                 continue;
             }
             
-            if (!vis.contains(new_node) and atNode + 1 >= atNewNode.?) {
+            if (!vis.contains(new_node) and at_node + 1 >= at_new_node.?) {
                 try q.enqueue(State.init(state.dist + 1, new_node));
                 try vis.put(new_node, {});
             }
