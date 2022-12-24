@@ -75,7 +75,7 @@ fn hasBlizzard(blizzards_x: BlizzardsByCoordMap, blizzards_y: BlizzardsByCoordMa
             var nx = @mod((blizzard.v.x + blizzard.dir.x * dist), N);
             var ny = @mod((blizzard.v.y + blizzard.dir.y * dist), M);
 
-            if (node.equalsTo(V.init(nx, ny))) {
+            if (node.x == nx and node.y == ny) {
                 return true;
             }
         }
