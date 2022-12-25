@@ -41,13 +41,12 @@ fn toLong(string: String) !Long {
 
 fn toSnafu(value: Long, alloc: Allocator) !String {
     var snafuBytes = ArrayList(SignedByte).init(alloc);
-    var prev_addition: Byte = 0;
     var addition: Byte = 0;
     var curr = value;
     while (curr > 0) {
         var mod = @mod(curr, 5);
         curr = @divFloor(curr, 5);
-        mod += prev_addition;
+        mod += addition;
         if (mod > 2) {
             addition = 1;
             mod -= 5;
@@ -55,7 +54,6 @@ fn toSnafu(value: Long, alloc: Allocator) !String {
             addition = 0;
         }
         try snafuBytes.append(@intCast(SignedByte, mod));
-        prev_addition = addition;
     }
 
     if (addition > 0) {
